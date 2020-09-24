@@ -1,8 +1,8 @@
 package metadata
 
 import (
-	"github.com/metadata_client/metadata/common"
-	"github.com/metadata_client/metadata/elasticsearch"
+	"github.com/pegasus-cloud/metadata_client/metadata/common"
+	"github.com/pegasus-cloud/metadata_client/metadata/elasticsearch"
 	"github.com/spf13/viper"
 )
 
