@@ -8,8 +8,6 @@ import (
 
 	"github.com/pegasus-cloud/metadata_client/metadata/common"
 	"github.com/pegasus-cloud/metadata_client/metadata/utility"
-
-	"github.com/spf13/viper"
 )
 
 // HasDeleted ...
@@ -34,7 +32,7 @@ func (p *Provider) HasDeleted(messageID string) (deleted bool, err error) {
 	esQueryResp := &esQueryResp{}
 	json.Unmarshal(metaResp, esQueryResp)
 
-	if len(esQueryResp.Hits.Hits) == 1 && esQueryResp.Hits.Hits[0].Index == viper.GetString("metadata.elasticsearch.msg_deleted_indices") {
+	if len(esQueryResp.Hits.Hits) == 1 && esQueryResp.Hits.Hits[0].Index == p.DeletedIndex {
 		return true, nil
 	}
 	return false, fmt.Errorf("[%s](%+v) %v", "Elasticsearch Get", gQuery, common.MessageIDDoesNotExist)
