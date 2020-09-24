@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/metadata_client/metadata/utility"
+	"github.com/pegasus-cloud/metadata_client/metadata/utility"
 )
 
 type (

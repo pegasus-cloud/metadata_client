@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/metadata_client/metadata/common"
-	"github.com/metadata_client/metadata/utility"
+	"github.com/pegasus-cloud/metadata_client/metadata/common"
+	"github.com/pegasus-cloud/metadata_client/metadata/utility"
 )
 
 // Insert ...
