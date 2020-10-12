@@ -12,7 +12,7 @@ import (
 
 // Insert ...
 func (p *Provider) Insert(message common.Metadata) (err error) {
-	url := fmt.Sprintf("%s://%s/%s/_doc?refresh=true", p.Schema, p.Endpoint, p.Index)
+	url := fmt.Sprintf("%s://%s/%s/_doc?refresh=%t", p.Scheme, p.Endpoint, p.Index, p.Refresh)
 	bMessage, err := json.Marshal(message)
 	if err != nil {
 		return fmt.Errorf("[%s](%+v) %v", "Elasticsearch Insert", string(bMessage), err)
@@ -28,7 +28,7 @@ func (p *Provider) Insert(message common.Metadata) (err error) {
 }
 
 func (p *Provider) insert2DeletedIndex(message common.Metadata) (err error) {
-	url := fmt.Sprintf("%s://%s/%s/_doc?refresh=true", p.Schema, p.Endpoint, p.DeletedIndex)
+	url := fmt.Sprintf("%s://%s/%s/_doc?refresh=%t", p.Scheme, p.Endpoint, p.DeletedIndex, p.Refresh)
 	bMessage, err := json.Marshal(message)
 	if err != nil {
 		return fmt.Errorf("[%s](%+v) %v", "Elasticsearch Insert", string(bMessage), err)

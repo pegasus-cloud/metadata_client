@@ -52,7 +52,7 @@ func (p *Provider) Purge(groupID, queueName string, force bool) (err error) {
 	}
 
 	// Purge metadatas in Elasticsearch
-	url := fmt.Sprintf("%s://%s/%s/_delete_by_query?refresh=true", p.Schema, p.Endpoint, p.Index)
+	url := fmt.Sprintf("%s://%s/%s/_delete_by_query?refresh=%t", p.Scheme, p.Endpoint, p.Index, p.Refresh)
 	if resp, status, err := utility.SendRequest(http.MethodPost, url, headers, bytes.NewBuffer(bpQuery)); err != nil {
 		return fmt.Errorf("[%s](%+v) %v", "Elasticsearch Purge", pQuery, err)
 	} else if status != http.StatusOK {
@@ -75,7 +75,7 @@ func (p *Provider) get(groupID, queueName string) (metadatas []common.Metadata, 
 	}
 
 	// Get metadata from Elasticsearch
-	url := fmt.Sprintf("%s://%s/_search", p.Schema, p.Endpoint)
+	url := fmt.Sprintf("%s://%s/_search", p.Scheme, p.Endpoint)
 	resp, status, err := utility.SendRequest(http.MethodPost, url, headers, bytes.NewBuffer(bpQuery))
 	if err != nil {
 		return metadatas, fmt.Errorf("[%s](%+v) %v", "Elasticsearch Get", bpQuery, err)

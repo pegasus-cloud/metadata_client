@@ -8,11 +8,12 @@ var (
 
 // Provider ...
 type Provider struct {
-	Schema        string
+	Scheme        string
 	Endpoint      string
 	Index         string
 	DeletedIndex  string
 	NumOfReplicas int
 	NumOfShards   int
+	Refresh       bool
 	_             struct{}
 }
