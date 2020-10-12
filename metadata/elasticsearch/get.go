@@ -35,7 +35,7 @@ type (
 
 // Get ...
 func (p *Provider) Get(messageID string) (metadata common.Metadata, err error) {
-	url := fmt.Sprintf("%s://%s/_search", p.Schema, p.Endpoint)
+	url := fmt.Sprintf("%s://%s/_search", p.Scheme, p.Endpoint)
 	metadata = common.Metadata{}
 	gQuery := gQuery{}
 	gMatch := gMatch{}

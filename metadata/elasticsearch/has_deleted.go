@@ -12,7 +12,7 @@ import (
 
 // HasDeleted ...
 func (p *Provider) HasDeleted(messageID string) (deleted bool, err error) {
-	url := fmt.Sprintf("%s://%s/_search", p.Schema, p.Endpoint)
+	url := fmt.Sprintf("%s://%s/_search", p.Scheme, p.Endpoint)
 	gQuery := gQuery{}
 	gMatch := gMatch{}
 	gMatch.Match.MessageID = messageID

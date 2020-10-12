@@ -39,7 +39,7 @@ func (p *Provider) Delete(messageID string) (err error) {
 	dMatch := dMatch{}
 	dMatch.Match.MessageID = messageID
 	dQuery.Query.Bool.Must = append(dQuery.Query.Bool.Must, dMatch)
-	url := fmt.Sprintf("%s://%s/%s/_delete_by_query?refresh=true", p.Schema, p.Endpoint, p.Index)
+	url := fmt.Sprintf("%s://%s/%s/_delete_by_query?refresh=%t", p.Scheme, p.Endpoint, p.Index, p.Refresh)
 
 	// Delete message in Elasticsearch
 	resp, status, err := utility.SendRequest(http.MethodPost, url, headers, dQuery)
@@ -56,7 +56,7 @@ func (p *Provider) deleteInDeletedIndex(messageID string) (err error) {
 	dMatch := dMatch{}
 	dMatch.Match.MessageID = messageID
 	dQuery.Query.Bool.Must = append(dQuery.Query.Bool.Must, dMatch)
-	url := fmt.Sprintf("%s://%s/%s/_delete_by_query?refresh=true", p.Schema, p.Endpoint, p.DeletedIndex)
+	url := fmt.Sprintf("%s://%s/%s/_delete_by_query?refresh=%t", p.Scheme, p.Endpoint, p.DeletedIndex, p.Refresh)
 
 	// Delete message in Elasticsearch
 	resp, status, err := utility.SendRequest(http.MethodPost, url, headers, dQuery)

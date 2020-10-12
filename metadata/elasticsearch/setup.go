@@ -19,7 +19,7 @@ type setup struct {
 func (p *Provider) Setup() (err error) {
 	indices := []string{p.DeletedIndex, p.Index}
 	for _, index := range indices {
-		url := fmt.Sprintf("%s://%s/%s", p.Schema, p.Endpoint, index)
+		url := fmt.Sprintf("%s://%s/%s", p.Scheme, p.Endpoint, index)
 		setup := setup{}
 		setup.Setting.Replicas = p.NumOfReplicas
 		setup.Setting.Shards = p.NumOfShards
