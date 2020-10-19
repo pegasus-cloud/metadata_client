@@ -6,7 +6,7 @@ type Metadata interface {
 	Get(messageID string) (metadata []byte, err error)
 	Delete(messageID string) (err error)
 	Purge(groupID, queueName string, force bool) (err error)
-	HasDeleted(messageID string) (deleted bool, err error)
+	Exist(messageID string) (exist bool, err error)
 	Setup() (err error)
 	HealthCheck() (status string, err error)
 }
