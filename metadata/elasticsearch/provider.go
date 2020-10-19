@@ -14,6 +14,7 @@ type Provider struct {
 	DeletedIndex  string
 	NumOfReplicas int
 	NumOfShards   int
-	Refresh       bool
-	_             struct{}
+	// Only supported true or false, wait_for is invalid
+	Refresh bool
+	_       struct{}
 }

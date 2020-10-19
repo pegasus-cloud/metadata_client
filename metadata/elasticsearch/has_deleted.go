@@ -14,9 +14,7 @@ import (
 func (p *Provider) HasDeleted(messageID string) (deleted bool, err error) {
 	url := fmt.Sprintf("%s://%s/_search", p.Scheme, p.Endpoint)
 	gQuery := gQuery{}
-	gMatch := gMatch{}
-	gMatch.Match.MessageID = messageID
-	gQuery.Query.Bool.Must = append(gQuery.Query.Bool.Must, gMatch)
+	gQuery.Query.Match.ID = messageID
 	bgQuery, err := json.Marshal(gQuery)
 	if err != nil {
 		return false, fmt.Errorf("[%s](%+v) %v", "Elasticsearch Get", gQuery, err)
