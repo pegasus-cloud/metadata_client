@@ -11,8 +11,8 @@ import (
 	"github.com/pegasus-cloud/metadata_client/metadata/utility"
 )
 
-// HasDeleted ...
-func (p *Provider) HasDeleted(messageID string) (deleted bool, err error) {
+// Exist ...
+func (p *Provider) Exist(messageID string) (exist bool, err error) {
 	// Defined Elasticseaerch query body
 	url := fmt.Sprintf("%s://%s/_search", p.Scheme, p.Endpoint)
 	gQuery := gQuery{}
@@ -32,8 +32,8 @@ func (p *Provider) HasDeleted(messageID string) (deleted bool, err error) {
 	esQueryResp := &esQueryResp{}
 	json.Unmarshal(metaResp, esQueryResp)
 
-	// If reponse length is one and it exist in DeletedIndex, than return true
-	if len(esQueryResp.Hits.Hits) == 1 && esQueryResp.Hits.Hits[0].Index == p.DeletedIndex {
+	// If reponse length is one and it exist in Index, than return true
+	if len(esQueryResp.Hits.Hits) == 1 && esQueryResp.Hits.Hits[0].Index == p.Index {
 		return true, nil
 	}
 	return false, errors.New(common.MessageIDDoesNotExist)
