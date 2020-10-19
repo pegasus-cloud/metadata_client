@@ -3,6 +3,7 @@ package elasticsearch
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -27,15 +28,15 @@ type (
 func (p *Provider) Purge(groupID, queueName string, force bool) (err error) {
 	if !force {
 		// Get Message from Elasticsearch
-		metadatas, err := p.get(groupID, queueName)
+		gMetadatas, err := p.get(groupID, queueName)
 		if err != nil {
 			return err
 		}
 
 		// Insert into DeletedIndex
-		for _, metadata := range metadatas {
-			if err := p.insert2DeletedIndex(metadata); err != nil {
-				return fmt.Errorf("[%s](%+v) %v", "Elasticsearch Insert2DeletedIndex", metadata, err)
+		for _, gMetadata := range gMetadatas {
+			if err := p.insert2DeletedIndex(gMetadata.MessageID, gMetadata.MetaData); err != nil {
+				return err
 			}
 		}
 	}
@@ -48,21 +49,25 @@ func (p *Provider) Purge(groupID, queueName string, force bool) (err error) {
 	})
 	bpQuery, err := json.Marshal(pQuery)
 	if err != nil {
-		return fmt.Errorf("[%s](%+v) %v", "JSON Marshal", pQuery, err)
+		return err
 	}
 
 	// Purge metadatas in Elasticsearch
 	url := fmt.Sprintf("%s://%s/%s/_delete_by_query?refresh=%t", p.Scheme, p.Endpoint, p.Index, p.Refresh)
-	if resp, status, err := utility.SendRequest(http.MethodPost, url, headers, bytes.NewBuffer(bpQuery)); err != nil {
-		return fmt.Errorf("[%s](%+v) %v", "Elasticsearch Purge", pQuery, err)
+	if _, status, err := utility.SendRequest(http.MethodPost, url, headers, bytes.NewBuffer(bpQuery)); err != nil {
+		return err
 	} else if status != http.StatusOK {
-		return fmt.Errorf("[%s](%+v) %v", "Elasticsearch Purge", pQuery, string(resp))
+		return errors.New(common.StatusCodeIsNotOK)
 	}
 	return nil
 }
 
-func (p *Provider) get(groupID, queueName string) (metadatas []common.Metadata, err error) {
-	metadatas = []common.Metadata{}
+type gMetadata struct {
+	MessageID string
+	MetaData  []byte
+}
+
+func (p *Provider) get(groupID, queueName string) (metadatas []gMetadata, err error) {
 	pQuery := pQuery{}
 	pQuery.Query.Bool.Must = append(pQuery.Query.Bool.Must, pMatch{
 		Match: map[string]string{"groupId": groupID},
@@ -71,34 +76,28 @@ func (p *Provider) get(groupID, queueName string) (metadatas []common.Metadata, 
 	})
 	bpQuery, err := json.Marshal(pQuery)
 	if err != nil {
-		return metadatas, fmt.Errorf("[%s](%+v) %v", "JSON Marshal", pQuery, err)
+		return nil, fmt.Errorf("[%s](%+v) %v", "JSON Marshal", pQuery, err)
 	}
 
 	// Get metadata from Elasticsearch
 	url := fmt.Sprintf("%s://%s/_search", p.Scheme, p.Endpoint)
 	resp, status, err := utility.SendRequest(http.MethodPost, url, headers, bytes.NewBuffer(bpQuery))
 	if err != nil {
-		return metadatas, fmt.Errorf("[%s](%+v) %v", "Elasticsearch Get", bpQuery, err)
+		return nil, err
 	} else if status != http.StatusOK {
-		return metadatas, fmt.Errorf("[%s](%+v) %v", "Elasticsearch Get", bpQuery, string(resp))
+		return nil, errors.New(common.StatusCodeIsNotOK)
 	}
 	esQueryResp := &esQueryResp{}
 	json.Unmarshal(resp, esQueryResp)
 
 	for _, metadata := range esQueryResp.Hits.Hits {
-		metadatas = append(metadatas, common.Metadata{
-			VersionOfStruct:        metadata.Source.VersionOfStruct,
-			MessageID:              metadata.Source.MessageID,
-			UserID:                 metadata.Source.UserID,
-			GroupID:                metadata.Source.GroupID,
-			QueueName:              metadata.Source.QueueName,
-			IsEncrypted:            metadata.Source.IsEncrypted,
-			KMSID:                  metadata.Source.KMSID,
-			SendTimestamp:          metadata.Source.SendTimestamp,
-			DisplayName:            metadata.Source.DisplayName,
-			MessageAttributes:      metadata.Source.MessageAttributes,
-			MD5OfMessageAttributes: metadata.Source.MD5OfMessageAttributes,
-			MD5OfMessageBody:       metadata.Source.MD5OfMessageBody,
+		bSource, err := json.Marshal(metadata.Source)
+		if err != nil {
+			return nil, err
+		}
+		metadatas = append(metadatas, gMetadata{
+			MessageID: metadata.ID,
+			MetaData:  bSource,
 		})
 	}
 	return metadatas, nil

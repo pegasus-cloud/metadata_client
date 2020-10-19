@@ -7,4 +7,6 @@ const (
 	MessageIDDoesNotExist = "The message ID does not exist in metadata storage"
 	// MessageIDHasBeenDeleted ...
 	MessageIDHasBeenDeleted = "The message ID has been deleted"
+	// StatusCodeIsNotOK ...
+	StatusCodeIsNotOK = "The status code of HTTP response is not 200"
 )

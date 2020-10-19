@@ -3,6 +3,7 @@ package elasticsearch
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -12,28 +13,28 @@ import (
 
 // HasDeleted ...
 func (p *Provider) HasDeleted(messageID string) (deleted bool, err error) {
+	// Defined Elasticseaerch query body
 	url := fmt.Sprintf("%s://%s/_search", p.Scheme, p.Endpoint)
 	gQuery := gQuery{}
-	gMatch := gMatch{}
-	gMatch.Match.MessageID = messageID
-	gQuery.Query.Bool.Must = append(gQuery.Query.Bool.Must, gMatch)
+	gQuery.Query.Match.ID = messageID
 	bgQuery, err := json.Marshal(gQuery)
 	if err != nil {
-		return false, fmt.Errorf("[%s](%+v) %v", "Elasticsearch Get", gQuery, err)
+		return false, err
 	}
 
 	// Get metadata from metadata index in Elasticsearch
 	metaResp, status, err := utility.SendRequest(http.MethodPost, url, headers, bytes.NewBuffer(bgQuery))
 	if err != nil {
-		return false, fmt.Errorf("[%s](%+v) %v", "Elasticsearch Get", gQuery, err)
+		return false, err
 	} else if status != http.StatusOK {
-		return false, fmt.Errorf("[%s](%+v) %v", "Elasticsearch Get", gQuery, string(metaResp))
+		return false, errors.New(common.StatusCodeIsNotOK)
 	}
 	esQueryResp := &esQueryResp{}
 	json.Unmarshal(metaResp, esQueryResp)
 
+	// If reponse length is one and it exist in DeletedIndex, than return true
 	if len(esQueryResp.Hits.Hits) == 1 && esQueryResp.Hits.Hits[0].Index == p.DeletedIndex {
 		return true, nil
 	}
-	return false, fmt.Errorf("[%s](%+v) %v", "Elasticsearch Get", gQuery, common.MessageIDDoesNotExist)
+	return false, errors.New(common.MessageIDDoesNotExist)
 }

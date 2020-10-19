@@ -3,6 +3,7 @@ package elasticsearch
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -11,60 +12,59 @@ import (
 )
 
 type (
-	gQuery struct {
-		Query struct {
-			Bool struct {
-				Must []gMatch `json:"must"`
-			} `json:"bool"`
-		} `json:"query"`
-	}
-	gMatch struct {
-		Match struct {
-			MessageID string `json:"messageId"`
-		} `json:"match"`
-	}
 	esQueryResp struct {
 		Hits struct {
 			Hits []struct {
-				Index  string          `json:"_index"`
-				Source common.Metadata `json:"_source"`
+				Index  string      `json:"_index"`
+				ID     string      `json:"_id"`
+				Source interface{} `json:"_source"`
 			} `json:"hits"`
 		} `json:"hits"`
+	}
+	gQuery struct {
+		Query struct {
+			Match struct {
+				ID string `json:"_id"`
+			} `json:"match"`
+		} `json:"query"`
 	}
 )
 
 // Get ...
-func (p *Provider) Get(messageID string) (metadata common.Metadata, err error) {
-	url := fmt.Sprintf("%s://%s/_search", p.Scheme, p.Endpoint)
-	metadata = common.Metadata{}
+func (p *Provider) Get(messageID string) (metadata []byte, err error) {
+	// Defined Elasticseaerch query body
 	gQuery := gQuery{}
-	gMatch := gMatch{}
-	gMatch.Match.MessageID = messageID
-	gQuery.Query.Bool.Must = append(gQuery.Query.Bool.Must, gMatch)
+	gQuery.Query.Match.ID = messageID
 	bgQuery, err := json.Marshal(gQuery)
 	if err != nil {
-		return metadata, fmt.Errorf("[%s](%+v) %v", "Elasticsearch Get", gQuery, err)
+		return nil, err
 	}
 
 	// Get metadata from metadata index in Elasticsearch
+	url := fmt.Sprintf("%s://%s/_search", p.Scheme, p.Endpoint)
 	metaResp, status, err := utility.SendRequest(http.MethodPost, url, headers, bytes.NewBuffer(bgQuery))
 	if err != nil {
-		return metadata, fmt.Errorf("[%s](%+v) %v", "Elasticsearch Get", gQuery, err)
+		return nil, err
 	} else if status != http.StatusOK {
-		return metadata, fmt.Errorf("[%s](%+v) %v", "Elasticsearch Get", gQuery, string(metaResp))
+		return nil, errors.New(common.StatusCodeIsNotOK)
 	}
 	esQueryResp := &esQueryResp{}
 	json.Unmarshal(metaResp, esQueryResp)
 
+	// If response length from Elasticsearch is 0, then return MessageIDDoesNotExist error
+	// If index of specified document is DeletedIndex, then return MessageIDHasBeenDeleted error
 	if len(esQueryResp.Hits.Hits) == 0 {
-		return metadata, fmt.Errorf("[%s](%+v) %v", "Elasticsearch Get", gQuery, common.MessageIDDoesNotExist)
+		return nil, errors.New(common.MessageIDDoesNotExist)
 	} else if esQueryResp.Hits.Hits[0].Index == p.DeletedIndex {
-		if err := p.deleteInDeletedIndex(messageID); err != nil {
-			return metadata, err
-		}
-		return metadata, fmt.Errorf(common.MessageIDHasBeenDeleted)
+		return nil, errors.New(common.MessageIDHasBeenDeleted)
 	}
 
-	metadata = esQueryResp.Hits.Hits[0].Source
+	// Parse Elasticsearch reponse to specified structure
+	bSource, err := json.Marshal(esQueryResp.Hits.Hits[0].Source)
+	if err != nil {
+		return nil, err
+	}
+
+	metadata = bSource
 	return metadata, nil
 }
