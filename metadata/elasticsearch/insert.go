@@ -3,9 +3,11 @@ package elasticsearch
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 
+	"github.com/pegasus-cloud/metadata_client/metadata/common"
 	"github.com/pegasus-cloud/metadata_client/metadata/utility"
 )
 
@@ -20,66 +22,37 @@ type (
 )
 
 // Insert ...
-func (p *Provider) Insert(id string, metadata interface{}) (err error) {
+func (p *Provider) Insert(id string, metadata []byte) (err error) {
+	return p.insert(p.Index, id, metadata)
+}
+
+func (p *Provider) insert2DeletedIndex(id string, metadata []byte) (err error) {
+	return p.insert(p.DeletedIndex, id, metadata)
+}
+
+func (p *Provider) insert(index, id string, metadata []byte) (err error) {
 	var body []byte
 	url := fmt.Sprintf("%s://%s/_bulk?refresh=%t", p.Scheme, p.Endpoint, p.Refresh)
 
 	metaStruct := &eMetadata{}
-	metaStruct.Index.Index = p.Index
+	metaStruct.Index.Index = index
 	metaStruct.Index.Type = "_doc"
 	metaStruct.Index.ID = id
 	ebMetadata, err := json.Marshal(metaStruct)
 	if err != nil {
-		return fmt.Errorf("[%s](%+v) %v", "Elasticsearch Insert", string(ebMetadata), err)
-	}
-
-	bMetadata, err := json.Marshal(metadata)
-	if err != nil {
-		return fmt.Errorf("[%s](%+v) %v", "Elasticsearch Insert", string(bMetadata), err)
+		return err
 	}
 
 	body = append(body, ebMetadata...)
 	body = append(body, '\n')
-	body = append(body, bMetadata...)
+	body = append(body, metadata...)
 	body = append(body, '\n')
 
 	// Send data to Elasticsearch
-	if resp, status, err := utility.SendRequest(http.MethodPut, url, headers, bytes.NewBuffer(body)); err != nil {
-		return fmt.Errorf("[%s](%+v) %v", "Elasticsearch Insert", string(bMetadata), err)
+	if _, status, err := utility.SendRequest(http.MethodPut, url, headers, bytes.NewBuffer(body)); err != nil {
+		return err
 	} else if status != http.StatusOK {
-		return fmt.Errorf("[%s](%+v) %v", "Elasticsearch Insert", string(bMetadata), string(resp))
-	}
-	return nil
-}
-
-func (p *Provider) insert2DeletedIndex(id string, message interface{}) (err error) {
-	var body []byte
-	url := fmt.Sprintf("%s://%s/%s/_bulk?refresh=%t", p.Scheme, p.Endpoint, p.DeletedIndex, p.Refresh)
-
-	metaStruct := &eMetadata{}
-	metaStruct.Index.Index = p.DeletedIndex
-	metaStruct.Index.Type = "_doc"
-	metaStruct.Index.ID = id
-	bMetadata, err := json.Marshal(metaStruct)
-	if err != nil {
-		return fmt.Errorf("[%s](%+v) %v", "Elasticsearch Insert", string(bMetadata), err)
-	}
-
-	bMessage, err := json.Marshal(message)
-	if err != nil {
-		return fmt.Errorf("[%s](%+v) %v", "Elasticsearch Insert", string(bMessage), err)
-	}
-
-	body = append(body, bMetadata...)
-	body = append(body, '\n')
-	body = append(body, bMessage...)
-	body = append(body, '\n')
-
-	// Send data to Elasticsearch
-	if resp, status, err := utility.SendRequest(http.MethodPut, url, headers, bytes.NewBuffer(body)); err != nil {
-		return fmt.Errorf("[%s](%+v) %v", "Elasticsearch Insert", string(bMessage), err)
-	} else if status != http.StatusOK {
-		return fmt.Errorf("[%s](%+v) %v", "Elasticsearch Insert", string(bMessage), string(resp))
+		return errors.New(common.StatusCodeIsNotOK)
 	}
 	return nil
 }

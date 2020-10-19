@@ -3,6 +3,7 @@ package elasticsearch
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -30,32 +31,40 @@ type (
 )
 
 // Get ...
-func (p *Provider) Get(messageID string) (metadata interface{}, err error) {
-	url := fmt.Sprintf("%s://%s/_search", p.Scheme, p.Endpoint)
+func (p *Provider) Get(messageID string) (metadata []byte, err error) {
+	// Defined Elasticseaerch query body
 	gQuery := gQuery{}
 	gQuery.Query.Match.ID = messageID
-
 	bgQuery, err := json.Marshal(gQuery)
 	if err != nil {
-		return metadata, fmt.Errorf("[%s](%+v) %v", "Elasticsearch Get", gQuery, err)
+		return nil, err
 	}
 
 	// Get metadata from metadata index in Elasticsearch
+	url := fmt.Sprintf("%s://%s/_search", p.Scheme, p.Endpoint)
 	metaResp, status, err := utility.SendRequest(http.MethodPost, url, headers, bytes.NewBuffer(bgQuery))
 	if err != nil {
-		return metadata, fmt.Errorf("[%s](%+v) %v", "Elasticsearch Get", gQuery, err)
+		return nil, err
 	} else if status != http.StatusOK {
-		return metadata, fmt.Errorf("[%s](%+v) %v", "Elasticsearch Get", gQuery, string(metaResp))
+		return nil, errors.New(common.StatusCodeIsNotOK)
 	}
 	esQueryResp := &esQueryResp{}
 	json.Unmarshal(metaResp, esQueryResp)
 
+	// If response length from Elasticsearch is 0, then return MessageIDDoesNotExist error
+	// If index of specified document is DeletedIndex, then return MessageIDHasBeenDeleted error
 	if len(esQueryResp.Hits.Hits) == 0 {
-		return metadata, fmt.Errorf("[%s](%+v) %v", "Elasticsearch Get", gQuery, common.MessageIDDoesNotExist)
+		return nil, errors.New(common.MessageIDDoesNotExist)
 	} else if esQueryResp.Hits.Hits[0].Index == p.DeletedIndex {
-		return metadata, fmt.Errorf(common.MessageIDHasBeenDeleted)
+		return nil, errors.New(common.MessageIDHasBeenDeleted)
 	}
 
-	metadata = esQueryResp.Hits.Hits[0].Source
+	// Parse Elasticsearch reponse to specified structure
+	bSource, err := json.Marshal(esQueryResp.Hits.Hits[0].Source)
+	if err != nil {
+		return nil, err
+	}
+
+	metadata = bSource
 	return metadata, nil
 }

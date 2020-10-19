@@ -2,9 +2,11 @@ package elasticsearch
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 
+	"github.com/pegasus-cloud/metadata_client/metadata/common"
 	"github.com/pegasus-cloud/metadata_client/metadata/utility"
 )
 
@@ -26,12 +28,12 @@ func (p *Provider) Setup() (err error) {
 
 		bsetup, err := json.Marshal(setup)
 		if err != nil {
-			return fmt.Errorf("[%s](%+v) %v", "Elasticsearch Setup", setup, err)
+			return err
 		}
-		if resp, status, err := utility.SendRequest(http.MethodPut, url, headers, bsetup); err != nil {
-			return fmt.Errorf("[%s](%+v) %v", "Elasticsearch Setup", setup, err)
+		if _, status, err := utility.SendRequest(http.MethodPut, url, headers, bsetup); err != nil {
+			return err
 		} else if status != http.StatusOK {
-			return fmt.Errorf("[%s](%+v) %v", "Elasticsearch Setup", setup, string(resp))
+			return errors.New(common.StatusCodeIsNotOK)
 		}
 	}
 	return nil

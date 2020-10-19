@@ -2,6 +2,7 @@ package elasticsearch
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -31,10 +32,10 @@ func (p *Provider) HealthCheck() (status string, err error) {
 	// Get cluster status from Elasticsearch
 	resp, statusCode, err := utility.SendRequest(http.MethodGet, url, headers, nil)
 	if err != nil {
-		return common.HealthUnknown, fmt.Errorf("[%s] %v", "Elasticsearch HealthCheck", err)
+		return common.HealthUnknown, err
 	}
 	if statusCode != http.StatusOK {
-		return common.HealthUnknown, fmt.Errorf("[%s] %v", "Elasticsearch HealthCheck", string(resp))
+		return common.HealthUnknown, errors.New(common.StatusCodeIsNotOK)
 	}
 
 	// Convert response body

@@ -2,8 +2,8 @@ package metadata
 
 // Metadata ...
 type Metadata interface {
-	Insert(messageID string, message interface{}) (err error)
-	Get(messageID string) (metadata interface{}, err error)
+	Insert(messageID string, metadata []byte) (err error)
+	Get(messageID string) (metadata []byte, err error)
 	Delete(messageID string) (err error)
 	Purge(groupID, queueName string, force bool) (err error)
 	HasDeleted(messageID string) (deleted bool, err error)
@@ -12,8 +12,6 @@ type Metadata interface {
 }
 
 var metadataProvider Metadata
-
-// type MD interface{}
 
 // Init ...
 func Init(provider Metadata) {
