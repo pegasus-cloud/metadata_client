@@ -9,6 +9,7 @@ type Metadata interface {
 	Exist(messageID string) (exist bool, err error)
 	Setup() (err error)
 	HealthCheck() (status string, err error)
+	Aggregate(rule []byte) (metadata []byte, err error)
 }
 
 var metadataProvider Metadata
