@@ -1,5 +1,12 @@
 package metadata
 
+import (
+	"fmt"
+	"reflect"
+
+	"github.com/pegasus-cloud/metadata_client/metadata/elasticsearch"
+)
+
 // Metadata ...
 type Metadata interface {
 	Insert(messageID string, metadata []byte) (err error)
@@ -12,10 +19,28 @@ type Metadata interface {
 	Aggregate(rule []byte) (metadata []byte, err error)
 }
 
-var metadataProvider Metadata
+type ProviderEnum int
+
+const (
+	//NonProviderEnum ...
+	NonProviderEnum ProviderEnum = iota
+	//ElasticsearchEnum ...
+	ElasticsearchEnum
+)
+
+var (
+	metadataProvider Metadata
+	//ProviderName ...
+	ProviderName = NonProviderEnum
+)
 
 // Init ...
 func Init(provider Metadata) {
+	fmt.Println(reflect.TypeOf(provider))
+	switch provider.(type) {
+	case *elasticsearch.Provider:
+		ProviderName = ElasticsearchEnum
+	}
 	metadataProvider = provider
 }
 
