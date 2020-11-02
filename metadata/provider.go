@@ -1,9 +1,6 @@
 package metadata
 
 import (
-	"fmt"
-	"reflect"
-
 	"github.com/pegasus-cloud/metadata_client/metadata/elasticsearch"
 )
 
@@ -36,7 +33,6 @@ var (
 
 // Init ...
 func Init(provider Metadata) {
-	fmt.Println(reflect.TypeOf(provider))
 	switch provider.(type) {
 	case *elasticsearch.Provider:
 		ProviderName = ElasticsearchEnum
