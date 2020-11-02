@@ -37,3 +37,81 @@ func (p *Provider) Aggregate(rule []byte) (metadata []byte, err error) {
 
 	return aggregate, nil
 }
+
+//Musts ...
+type Musts struct {
+	Size  int `json:"size"`
+	Query struct {
+		Bool struct {
+			Must []interface{} `json:"must"`
+		} `json:"bool"`
+	} `json:"query"`
+}
+
+//MustsWithAggregate ...
+type MustsWithAggregate struct {
+	Musts
+	Aggs struct {
+		Action struct {
+			Terms struct {
+				Field string `json:"field"`
+			} `json:"terms"`
+		}
+	} `json:"aggs"`
+}
+
+//NewMustsWithAggregate ...
+func NewMustsWithAggregate(key string) *MustsWithAggregate {
+	body := &MustsWithAggregate{}
+	body.Aggs.Action.Terms.Field = key
+	return body
+}
+
+//SSS ...
+func (m *MustsWithAggregate) SSS() *MustsWithAggregate {
+	return m
+}
+
+// QueryString add query_string
+func (m *Musts) QueryString(val string) *Musts {
+	type esQueryStringBody struct {
+		QueryString struct {
+			Query string `json:"query"`
+		} `json:"query_string"`
+	}
+	sb := &esQueryStringBody{}
+	sb.QueryString.Query = val
+	m.append(sb)
+	return m
+}
+
+//TimestampRange add range for @timestamp with gte and lte
+func (m *Musts) TimestampRange(gte, lte string) *Musts {
+	type esRangeBody struct {
+		Range struct {
+			Timestamp struct {
+				GTE string `json:"gte"`
+				LTE string `json:"lte"`
+			} `json:"@timestamp"`
+		} `json:"range"`
+	}
+	rb := &esRangeBody{}
+	rb.Range.Timestamp.GTE = gte
+	rb.Range.Timestamp.LTE = lte
+	m.append(rb)
+	return m
+}
+
+func (m *Musts) append(val interface{}) {
+	m.Query.Bool.Must = append(m.Query.Bool.Must, val)
+}
+
+//ToByte ...
+func (m *Musts) ToByte() []byte {
+	bytes, err := json.Marshal(m)
+	if err != nil {
+		return []byte{}
+	}
+	return bytes
+
+}
