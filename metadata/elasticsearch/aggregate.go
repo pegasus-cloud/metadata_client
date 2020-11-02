@@ -67,9 +67,13 @@ func NewMustsWithAggregate(key string) *MustsWithAggregate {
 	return body
 }
 
-//SSS ...
-func (m *MustsWithAggregate) SSS() *MustsWithAggregate {
-	return m
+//ToByte ...
+func (m *MustsWithAggregate) ToByte() []byte {
+	bytes, err := json.Marshal(m)
+	if err != nil {
+		return []byte{}
+	}
+	return bytes
 }
 
 // QueryString add query_string
@@ -113,5 +117,4 @@ func (m *Musts) ToByte() []byte {
 		return []byte{}
 	}
 	return bytes
-
 }
