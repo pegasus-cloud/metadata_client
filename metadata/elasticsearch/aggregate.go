@@ -119,7 +119,7 @@ func (m *Musts) TimestampRangeWithTimeZone(timezone, gte, lte string) *Musts {
 		} `json:"range"`
 	}
 	rb := &esRangeBody{}
-	rb.Range.Timestamp.TimeZone = gte
+	rb.Range.Timestamp.TimeZone = timezone
 	rb.Range.Timestamp.GTE = gte
 	rb.Range.Timestamp.LTE = lte
 	m.append(rb)
