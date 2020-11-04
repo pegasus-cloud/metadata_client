@@ -106,6 +106,26 @@ func (m *Musts) TimestampRange(gte, lte string) *Musts {
 	return m
 }
 
+//TimestampRangeWithTimeZone add range for @timestamp with gte, lte, timezone
+// timezone format is +08:00 or +8 or Asia/Taipei or UTC+8
+func (m *Musts) TimestampRangeWithTimeZone(timezone, gte, lte string) *Musts {
+	type esRangeBody struct {
+		Range struct {
+			Timestamp struct {
+				TimeZone string `json:"time_zone"`
+				GTE      string `json:"gte"`
+				LTE      string `json:"lte"`
+			} `json:"@timestamp"`
+		} `json:"range"`
+	}
+	rb := &esRangeBody{}
+	rb.Range.Timestamp.TimeZone = gte
+	rb.Range.Timestamp.GTE = gte
+	rb.Range.Timestamp.LTE = lte
+	m.append(rb)
+	return m
+}
+
 func (m *Musts) append(val interface{}) {
 	m.Query.Bool.Must = append(m.Query.Bool.Must, val)
 }
